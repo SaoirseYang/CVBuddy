@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="head">
+    <span id="domain" class="domain">-</span>
+    <span id="ruleStatus" class="tag">检查中</span>
+  </div>
+
+  <div class="strategy">
+    <label>顺序
+      <select id="order">
+        <option value="">自动</option>
+        <option value="latest-first">最新优先</option>
+        <option value="earliest-first">最早优先（高中起）</option>
+      </select>
+    </label>
+    <label>高中
+      <select id="hs">
+        <option value="">自动</option>
+        <option value="all">包含</option>
+        <option value="nohs">不含</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="btns">
+    <button id="fill" class="primary">开始填写本页</button>
+    <button id="stop">停止</button>
+  </div>
+  <div class="btns sub">
+    <label class="chk"><input type="checkbox" id="autoNext" />自动翻页</label>
+    <label class="chk"><input type="checkbox" id="teach" />教学模式</label>
+    <button id="snapshot" title="导出当前页面 DOM（含已填值），供离线分析生成站点规则">导出页面快照</button>
+  </div>
+
+  <div id="log" class="log"></div>
+
+  <a href="#" id="openOptions">打开资料库 / 规则管理 →</a>
+  <script src="../shared/dictionary.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

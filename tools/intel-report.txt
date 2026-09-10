@@ -1,0 +1,118 @@
+=========== 控件 ===========
+[input:text] name= id= ph= value=AI 软件开发工程师
+   labels: {}
+[input:text] name= id= ph= value=校园招聘
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {"container":"姓名"}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"男","container":"男","clsLabel":"男 女"}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"女","container":"女","clsLabel":"男 女"}
+[input:text] name= id=value ph= value=224040204@link.cuhk.edu.cn
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {"clsLabel":"中国大陆(Chinese Mainland, China) + 86 国家/地区"}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"是","container":"是","clsLabel":"是 否"}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"否","container":"否","clsLabel":"是 否"}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input] name= id= ph= value=
+   labels: {}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"有","container":"有","clsLabel":"有 无"}
+[input:radio] name=undefined 组内选项: 
+   labels: {"wrapLabel":"无","container":"无","clsLabel":"有 无"}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {"container":"英语等级成绩"}
+[input:text] name= id=value ph= value=
+   labels: {"container":"微信号"}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {"container":"证书名称"}
+[input] name= id= ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[input:text] name= id=value ph= value=
+   labels: {}
+[textarea] name= id=value ph= value=
+   labels: {"container":"请用3-5个词语形容你眼中的英特尔？"}
+[input:checkbox] name=undefined 组内选项: 
+   labels: {"forLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意","wrapLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意","clsLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意"}
+[input] name=tempAttachmentId id=tempAttachmentId ph= value=
+   labels: {}
+[input] name=fileName id=fileName ph= value=
+   labels: {}
+[textarea] name= id= ph= value= 
+   labels: {}
+[input:checkbox] name=undefined 组内选项: 
+   labels: {"forLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意","wrapLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意","clsLabel":"本人证明年满16周岁，英特尔不会收集任何16岁以下的人的个人信息，并同意"}
+
+=========== 可点击元素（含关键词文案）===========
+"添加 教育经历" <button class="add_btn text-color pointer">
+"添加 教育经历" <button class="add_btn text-color pointer">
+"添加 工作经历" <button class="add_btn text-color pointer">
+"添加 工作经历" <button class="add_btn text-color pointer">
+"添加 实习经验" <button class="add_btn text-color pointer">
+"添加 实习经验" <button class="add_btn text-color pointer">
+"添加 项目经历" <button class="add_btn text-color pointer">
+"添加 项目经历" <button class="add_btn text-color pointer">
+"添加 在校职务" <button class="add_btn text-color pointer">
+"添加 在校职务" <button class="add_btn text-color pointer">
+"添加 获奖情况" <button class="add_btn text-color pointer">
+"添加 获奖情况" <button class="add_btn text-color pointer">
+"添加 语言能力" <button class="add_btn text-color pointer">
+"添加 语言能力" <button class="add_btn text-color pointer">
+"确定" <button class="l-btn sureCut">
+"上一步" <button class="btn btn-primary-hollow">
+"下一步" <button class="btn btn-primary">
+"保存去投递" <button class="btn btn-primary-txt">
+"确定 取消" <div class="modal fade">
+"确定 取消" <div class="modal-dialog">
+"确定 取消" <div class="alert-content modal-content keep-content">
+"确定 取消" <div class="alert-body">
+"确定" <button class="btn btn-primary mr-5">
+"确定" <button class="btn btn-primary">
+
+=========== 区块标题（教育/实习/项目/获奖相关）===========
+"教育经历" <div class="section-title-wrapper">
+"教育经历" <span class="section-title">
+"工作经历" <div class="section-title-wrapper">
+"工作经历" <span class="section-title">
+"请从最近的经历填起" <div class="section-title-descrip">
+"实习经验" <div class="section-title-wrapper">
+"实习经验" <span class="section-title">
+"请从最近的经历填起" <div class="section-title-descrip">
+"项目经历" <div class="section-title-wrapper">
+"项目经历" <span class="section-title">
+"请从最近的经历填起" <div class="section-title-descrip">
+"请从最近的经历填起" <div class="section-title-descrip">
+"获奖情况" <div class="section-title-wrapper">
+"获奖情况" <span class="section-title">
+"请从最近的经历填起" <div class="section-title-descrip">
+"工作地点" <dt class="title">
+
+=========== 文件上传控件 ===========
+<div class="upload"> text="上 传 "
+<label class="upload_btn_warpper"> text="上 传 "
+<input class="input_file"> text=""
+<div class="upload"> text="上 传 "
+<label class="upload_btn_warpper"> text="上 传 "
+<input class="input_file"> text=""
+<input class=""> text=""
+<input class=""> text=""
+<div class="uploadPhotoDescStyle"> text=" "

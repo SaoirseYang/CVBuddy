@@ -1,0 +1,62 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; color: #222; }
+.layout { display: flex; min-height: 100vh; }
+.nav {
+  width: 180px;
+  flex-shrink: 0;
+  background: #f4f6f8;
+  border-right: 1px solid #e5e8ec;
+  padding: 16px 0;
+}
+.brand { font-weight: 600; padding: 0 20px 14px; border-bottom: 1px solid #e5e8ec; margin-bottom: 8px; }
+.nav a {
+  display: block;
+  padding: 9px 20px;
+  color: #444;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+}
+.nav a:hover { background: #e9edf1; }
+.nav a.active { background: #185fa5; color: #fff; }
+.main { flex: 1; padding: 24px 32px; max-width: 980px; }
+.tab { display: none; }
+.tab.active { display: block; }
+h3 { font-size: 15px; margin: 18px 0 10px; }
+h3:first-child { margin-top: 0; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; }
+.field label { display: block; font-size: 12px; color: #666; margin-bottom: 2px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccd3da;
+  border-radius: 6px;
+  font: inherit;
+}
+.field textarea { min-height: 60px; resize: vertical; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+th, td { border: 1px solid #e0e4e8; padding: 4px 6px; font-size: 13px; }
+th { background: #f7f9fa; font-weight: 500; }
+td input, td select, td textarea { width: 100%; border: 1px solid transparent; background: transparent; padding: 3px 4px; font: inherit; }
+td input:focus, td select:focus, td textarea:focus { border-color: #185fa5; background: #fff; }
+td textarea { min-height: 48px; }
+button {
+  padding: 6px 14px;
+  border: 1px solid #ccd3da;
+  border-radius: 6px;
+  background: #f7f7f7;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+button.primary { background: #185fa5; border-color: #185fa5; color: #fff; }
+button.danger { color: #b03434; }
+button:hover { filter: brightness(0.97); }
+.savebar { position: sticky; bottom: 0; background: #fff; padding: 12px 0 4px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 12px; }
+#saveMsg { color: #1d7a34; font-size: 12px; }
+.rulecard { border: 1px solid #e0e4e8; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.rulecard textarea { width: 100%; min-height: 140px; font: 12px/1.6 Consolas, monospace; border: 1px solid #ccd3da; border-radius: 6px; padding: 8px; }
+.rulehead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rulehead b { font-size: 13px; }
+.muted { color: #888; font-size: 12px; }
+.row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }

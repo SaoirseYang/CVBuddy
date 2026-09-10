@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "自维护网申助手",
+  "version": "0.2.0",
+  "description": "可自维护的网申自动填写助手：分段表单循环填写、时序策略自适应、站点规则沉淀、DeepSeek AI 兜底（可选）",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://api.deepseek.com/*"],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "自维护网申助手"
+  },
+  "background": {
+    "service_worker": "src/background/index.js"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/shared/dictionary.js",
+        "src/shared/storage.js",
+        "src/shared/builtin-rules.js",
+        "src/content/scanner.js",
+        "src/content/filler.js",
+        "src/content/strategy.js",
+        "src/content/teach.js",
+        "src/content/controller.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
