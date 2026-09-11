@@ -78,3 +78,27 @@ button:hover { filter: brightness(0.96); }
 .log .warn { color: #9a6b00; }
 .log .err { color: #b03434; }
 a { color: #185fa5; font-size: 12px; text-decoration: none; }
+
+/* 扫描预览面板 */
+.plan {
+  border: 1px solid #d8e4f0;
+  border-radius: 6px;
+  background: #f4f8fc;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.plan-head { font-weight: 600; margin-bottom: 4px; color: #185fa5; }
+.plan-sec {
+  font-weight: 600;
+  margin: 6px 0 2px;
+  padding-top: 4px;
+  border-top: 1px dashed #d0dce8;
+  color: #333;
+}
+.plan-item { color: #444; line-height: 1.7; word-break: break-all; }
+.plan-item.warn { color: #9a6b00; }
+.plan-item.muted { color: #999; }
+.plan-info { color: #666; }

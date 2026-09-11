@@ -1,4 +1,4 @@
-// 后台：只做 DeepSeek AI 兜底映射（页面环境有 CORS 限制，必须在 service worker 里请求）
+// 后台：DeepSeek AI 兜底 + 本地桥接代理（页面环境有 CORS/私网限制，统一在这里请求）
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "WS_AI_MAP") {
     handleAiMap(msg)
@@ -6,7 +6,57 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch((e) => sendResponse({ error: String(e && e.message ? e.message : e) }));
     return true; // 异步响应
   }
+  if (msg.type === "WS_BRIDGE_POLL") {
+    bridgeFetch("/cmd")
+      .then((r) => sendResponse({ ok: true, cmd: r.cmd || null }))
+      .catch((e) => sendResponse({ ok: false, error: errText(e) }));
+    return true;
+  }
+  if (msg.type === "WS_BRIDGE_PUSH") {
+    bridgePost("/ingest", msg.payload)
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: errText(e) }));
+    return true;
+  }
+  if (msg.type === "WS_BRIDGE_RESULT") {
+    bridgePost("/result", msg.payload)
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: errText(e) }));
+    return true;
+  }
+  if (msg.type === "WS_BRIDGE_STATUS") {
+    bridgeFetch("/ping")
+      .then((r) => sendResponse({ ok: true, info: r }))
+      .catch((e) => sendResponse({ ok: false, error: errText(e) }));
+    return true;
+  }
 });
+
+const errText = (e) => String((e && e.message) || e);
+
+async function bridgeBase() {
+  const { ws_settings } = await chrome.storage.local.get("ws_settings");
+  const port = (ws_settings && ws_settings.bridgePort) || 8765;
+  return "http://127.0.0.1:" + port;
+}
+
+async function bridgeFetch(pathAndQuery) {
+  const base = await bridgeBase();
+  const res = await fetch(base + pathAndQuery, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+async function bridgePost(pathname, payload) {
+  const base = await bridgeBase();
+  const res = await fetch(base + pathname, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload || {})
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
 
 async function handleAiMap({ labels, paths }) {
   const { ws_settings } = await chrome.storage.local.get("ws_settings");

@@ -20,6 +20,7 @@
 
   function toast(text) {
     const t = document.createElement("div");
+    t.dataset.wsUi = "teach";
     t.style.cssText =
       "position:fixed;top:16px;right:16px;z-index:2147483647;background:#185fa5;color:#fff;padding:8px 14px;border-radius:8px;font:13px/1.5 sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.2)";
     t.textContent = text;
@@ -39,6 +40,7 @@
     hide();
     const label = window.WS.Scanner.clean(window.WS.Scanner.ownText(el)) || el.name || "(未识别到label)";
     panel = document.createElement("div");
+    panel.dataset.wsUi = "teach";
     panel.style.cssText =
       "position:fixed;right:16px;bottom:16px;z-index:2147483647;background:#fff;border:1px solid #ccc;border-radius:10px;padding:12px;width:300px;font:13px/1.5 sans-serif;color:#222;box-shadow:0 4px 16px rgba(0,0,0,.18)";
     const title = document.createElement("div");

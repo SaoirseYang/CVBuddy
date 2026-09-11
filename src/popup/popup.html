@@ -29,17 +29,27 @@
 
   <div class="btns">
     <button id="fill" class="primary">开始填写本页</button>
+    <button id="scan">扫描预览</button>
     <button id="stop">停止</button>
   </div>
   <div class="btns sub">
     <label class="chk"><input type="checkbox" id="autoNext" />自动翻页</label>
     <label class="chk"><input type="checkbox" id="teach" />教学模式</label>
-    <button id="snapshot" title="导出当前页面 DOM（含已填值），供离线分析生成站点规则">导出页面快照</button>
   </div>
+  <div class="btns sub">
+    <label class="chk"><input type="checkbox" id="bridge" />实时同步给 WorkBuddy</label>
+    <span id="bridgeStatus" class="tag">未开启</span>
+  </div>
+  <div class="btns sub">
+    <button id="hud">页面面板</button>
+    <button id="snapshot" title="导出当前页面 DOM（含已填值），离线分析用">导出页面快照</button>
+  </div>
+
+  <div id="plan" class="plan" style="display:none"></div>
 
   <div id="log" class="log"></div>
 
-  <a href="#" id="openOptions">打开资料库 / 规则管理 →</a>
+  <a href="#" id="openOptions">打开资料库 / 词典 / 规则管理 →</a>
   <script src="../shared/dictionary.js"></script>
   <script src="../shared/storage.js"></script>
   <script src="popup.js"></script>

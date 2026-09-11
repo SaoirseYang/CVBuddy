@@ -7,28 +7,35 @@
 </head>
 <body>
   <div class="layout">
-    <nav class="nav">
-      <div class="brand">自维护网申助手</div>
-      <a data-tab="basic" class="active">基本信息</a>
-      <a data-tab="educations">教育经历</a>
-      <a data-tab="internships">实习/工作经历</a>
-      <a data-tab="projects">项目经历</a>
-      <a data-tab="awards">获奖情况</a>
-      <a data-tab="rules">站点规则</a>
-      <a data-tab="settings">设置与备份</a>
-    </nav>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="logo">申</span>
+        <div><b>网申助手</b><small>资料库 · 词典 · 规则</small></div>
+      </div>
+      <input id="navSearch" class="navsearch" placeholder="搜索板块…" />
+      <nav class="nav" id="nav"></nav>
+      <div class="sidefoot">
+        <button id="exportQuick" class="btn sm" style="width:100%">导出全部数据</button>
+      </div>
+    </aside>
+
     <main class="main">
-      <div id="tab-basic" class="tab active"></div>
-      <div id="tab-educations" class="tab"></div>
-      <div id="tab-internships" class="tab"></div>
-      <div id="tab-projects" class="tab"></div>
-      <div id="tab-awards" class="tab"></div>
-      <div id="tab-rules" class="tab"></div>
-      <div id="tab-settings" class="tab"></div>
-      <div class="savebar"><button id="saveAll" class="primary">保存全部资料</button><span id="saveMsg"></span></div>
+      <header class="pagehead">
+        <h1 id="pageTitle">基本信息</h1>
+        <p id="pageDesc"></p>
+      </header>
+      <section id="content"></section>
+      <div class="savebar">
+        <button id="saveAll" class="btn primary">保存全部资料</button>
+        <button id="reload" class="btn">重新载入</button>
+        <span id="saveMsg" class="msg"></span>
+        <span class="muted" style="margin-left:auto" id="saveHint">改动后记得保存；站点规则与词典是即时保存的</span>
+      </div>
     </main>
   </div>
+  <script src="../shared/dictionary.js"></script>
   <script src="../shared/storage.js"></script>
+  <script src="../shared/builtin-rules.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

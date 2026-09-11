@@ -1,0 +1,66 @@
+{
+  "basic": {
+    "name": "测试甲", "gender": "女", "birth": "2002-05-27", "phone": "13800000000",
+    "email": "test@example.com", "idType": "身份证", "idCard": "110101200205270000",
+    "political": "中共党员", "nation": "汉族", "nativePlace": "江苏南京", "hukou": "江苏南京",
+    "country": "中国", "height": "165", "weight": "50", "health": "良好", "marital": "未婚",
+    "wechat": "test_wx", "qq": "100000000", "workYears": "0", "specialty": "算法与数据结构",
+    "address": "北京市海淀区", "mailingAddress": "北京市海淀区", "hometown": "江苏省南京市",
+    "wwid": "", "emergencyContact": "测试乙", "emergencyPhone": "13900000000",
+    "expectOnboard": "2026-07-01", "expectPosition": "软件工程师", "expectCity": "北京",
+    "expectSalary": "面议", "expectIndustry": "半导体", "curSalary": "", "lastCompany": "",
+    "englishScore": "CET-6 574", "certName": "计算机二级", "language": "英语",
+    "source": "校园招聘官网", "hobby": "阅读、跑步", "selfEval": "踏实、学习能力强。"
+  },
+  "educations": [
+    {
+      "school": "测试大学", "level": "硕士", "degree": "硕士", "major": "计算机科学与技术",
+      "college": "计算机学院", "start": "2024-09", "end": "2027-06", "eduForm": "全日制",
+      "courses": "机器学习、操作系统", "direction": "自然语言处理", "thesis": "面向中文的检索增强生成",
+      "gpa": "3.8/4.0", "rank": "5/120", "overseas": "否", "minor": "", "tutor": "测试丙"
+    },
+    {
+      "school": "测试学院", "level": "本科", "degree": "学士", "major": "软件工程",
+      "college": "软件学院", "start": "2020-09", "end": "2024-06", "eduForm": "全日制",
+      "courses": "数据结构、计算机网络", "direction": "", "thesis": "基于图神经网络的推荐系统",
+      "gpa": "3.7/4.0", "rank": "8/150", "overseas": "否", "minor": "", "tutor": ""
+    },
+    {
+      "school": "测试中学", "level": "高中", "degree": "", "major": "", "college": "",
+      "start": "2017-09", "end": "2020-06", "eduForm": "全日制", "courses": "", "direction": "",
+      "thesis": "", "gpa": "", "rank": "3/50", "overseas": "否", "minor": "", "tutor": ""
+    }
+  ],
+  "internships": [
+    {
+      "company": "示例科技有限公司", "position": "算法实习生", "dept": "智能平台部",
+      "workType": "实习", "salary": "300/天", "start": "2025-07", "end": "2025-10",
+      "desc": "参与检索排序模型迭代，负责数据清洗与离线评测。", "achievements": "线上点击率提升 3%",
+      "referrer": "测试丁", "referrerPosition": "技术专家", "referrerContact": "13700000000",
+      "leaveReason": "实习结束", "subordinates": "0", "location": "北京"
+    }
+  ],
+  "projects": [
+    {
+      "name": "示例检索增强问答系统", "position": "负责人", "role": "算法负责人",
+      "start": "2025-03", "end": "2025-09", "desc": "基于向量检索与重排序的中文问答系统。",
+      "duty": "负责召回与重排模块设计实现。", "result": "准确率提升 8%", "link": ""
+    }
+  ],
+  "campuses": [
+    { "type": "社团组织", "org": "测试大学计算机协会", "position": "技术部部长", "start": "2021-09", "end": "2022-06", "desc": "组织技术分享与竞赛培训。" }
+  ],
+  "awards": [
+    { "name": "示例奖学金", "level": "校级", "date": "2023-10", "org": "测试大学", "desc": "专业前 5%" }
+  ],
+  "languages": [
+    { "lang": "英语", "certName": "CET-6", "level": "CET-6", "score": "574", "mastery": "熟练", "listening": "良好", "reading": "良好" }
+  ],
+  "skills": [{ "name": "Python", "mastery": "熟练", "score": "" }],
+  "certificates": [{ "date": "2022-06", "name": "计算机二级", "no": "NCRE2022001", "desc": "C 语言" }],
+  "family": [{ "name": "测试乙", "relation": "父亲", "phone": "13900000000", "company": "示例单位", "position": "工程师", "political": "群众" }],
+  "papers": [{ "date": "2025-05", "title": "示例论文标题", "journal": "示例期刊", "tier": "中文核心", "author": "第一作者", "impact": "2.1", "desc": "摘要内容。", "link": "" }],
+  "patents": [{ "date": "2025-01", "name": "示例专利", "no": "CN0000000", "type": "发明专利", "result": "已受理" }],
+  "works": [{ "name": "示例作品", "link": "https://example.com", "desc": "作品说明" }],
+  "competitions": [{ "name": "示例程序设计竞赛", "date": "2023-05", "desc": "省级二等奖" }]
+}

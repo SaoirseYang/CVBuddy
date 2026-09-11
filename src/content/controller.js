@@ -11,11 +11,28 @@
 
   let running = false;
   let stopped = false;
+  let lastResult = null;
+  const subs = []; // 进度订阅（页面内面板用）
+  const subscribe = (fn) => {
+    subs.push(fn);
+    return () => {
+      const i = subs.indexOf(fn);
+      if (i >= 0) subs.splice(i, 1);
+    };
+  };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const log = (msg, logType) => {
+    const type = logType || "info";
+    subs.forEach((fn) => {
+      try {
+        fn(msg, type);
+      } catch (e) {
+        /* 忽略 */
+      }
+    });
     try {
-      chrome.runtime.sendMessage({ type: "WS_PROGRESS", msg, logType: logType || "info" });
+      chrome.runtime.sendMessage({ type: "WS_PROGRESS", msg, logType: type });
     } catch (e) {
       /* popup 已关闭，忽略 */
     }
@@ -58,10 +75,18 @@
       if (!hints.some((h) => t.includes(h))) continue;
       if (!Scanner.visible(b)) continue;
       let c = b.parentElement;
+      let found = null;
       for (let i = 0; i < 4 && c; i++) {
-        if (c.querySelector("input,select,textarea")) return c;
+        if (c.querySelector("input,select,textarea")) {
+          found = c;
+          break;
+        }
+        // 已经把别的区块也圈进来了，说明爬过头了
+        if (Scanner.sectionTitleCount(c) >= 2) break;
         c = c.parentElement;
       }
+      if (found && Scanner.inputCount(found) <= 40 && Scanner.sectionTitleCount(found) < 2) return found;
+      // 空区块（只有"添加"按钮，还没添加过任何一段）：返回按钮附近的容器，点添加后表单才出现
       return b.parentElement;
     }
     return null;
@@ -95,30 +120,89 @@
 
   // ---- 字段->资料路径 匹配 ----
 
-  // 词典匹配：优先命中最长词
-  function lookupDict(...texts) {
-    let best = null;
-    for (const [path, words] of Object.entries(D.FIELD_DICT)) {
-      for (const w of words) {
-        for (const t of texts) {
-          if (!t) continue;
-          const ok = w.length <= 2 ? t === w : t.includes(w);
-          if (!ok) continue;
-          if (!best || w.length > best.w) best = { path, w };
-        }
-      }
+  // 用户自定义词典（资料库「字段词典」页维护），与内置词典合并；自定义词优先（先扫一遍）
+  let customDict = {};
+  let mergedCache = null;
+  const mergedDict = () => {
+    if (mergedCache) return mergedCache;
+    const out = {};
+    for (const [p, ws] of Object.entries(D.FIELD_DICT)) out[p] = ws.slice();
+    for (const [p, ws] of Object.entries(customDict || {})) {
+      out[p] = (ws || []).slice().concat(out[p] || []);
     }
-    return best ? best.path : null;
+    mergedCache = out;
+    return out;
+  };
+  async function loadCustomDict() {
+    try {
+      customDict = await ST.getCustomDict();
+    } catch (e) {
+      customDict = {};
+    }
+    mergedCache = null;
+  }
+  try {
+    chrome.storage.onChanged.addListener((chg) => {
+      if (chg && chg.ws_dict) {
+        customDict = chg.ws_dict.newValue || {};
+        mergedCache = null;
+      }
+    });
+  } catch (e) {
+    /* 忽略 */
   }
 
-  // 站点规则匹配
-  function matchRuleField(fd, rule) {
-    if (!rule || !rule.fieldRules) return null;
-    for (const fr of rule.fieldRules) {
-      if (fr.match.label && fd.label && fd.label.includes(fr.match.label)) return fr.from;
-      if (fr.match.name && fd.name && (fd.name === fr.match.name || fd.name.includes(fr.match.name))) return fr.from;
+  // 词典匹配。策略：
+  // ① 按 texts 的先后顺序优先——主 label 命中就不再理会备选（避免容器长文本造成误配）；
+  // ② 单条文本内取"最长词"；同长度时取位置更靠后的（"最高学历毕业时间" → 毕业时间 而非 最高学历）；
+  // ③ preferPrefix 传入区块前缀（如 "prj"）时先只在本区块词典里找，避免"职位"串区块。
+  function lookupDict(preferPrefix, ...texts) {
+    const dict = mergedDict();
+    const scanOne = (t, prefixFilter) => {
+      let best = null;
+      for (const [path, words] of Object.entries(dict)) {
+        if (prefixFilter && !path.startsWith(prefixFilter + ".")) continue;
+        for (const w of words) {
+          if (!w) continue;
+          const ok = w.length <= 2 ? t === w : t.includes(w);
+          if (!ok) continue;
+          const idx = t.indexOf(w);
+          if (!best || w.length > best.len || (w.length === best.len && idx > best.idx)) {
+            best = { path, len: w.length, idx };
+          }
+        }
+      }
+      return best ? best.path : null;
+    };
+    for (const t of texts) {
+      if (!t) continue;
+      if (preferPrefix) {
+        const p = scanOne(t, preferPrefix);
+        if (p) return p;
+      }
+      const p2 = scanOne(t, null);
+      if (p2) return p2;
     }
     return null;
+  }
+
+  // 站点规则匹配：返回 { from: 资料路径 } 或 { value: 固定值 }
+  function matchRuleEntry(fd, rule) {
+    if (!rule || !rule.fieldRules) return null;
+    for (const fr of rule.fieldRules) {
+      if (!fr || !fr.match) continue;
+      const hit =
+        (fr.match.label && fd.label && fd.label.includes(fr.match.label)) ||
+        (fr.match.name && fd.name && (fd.name === fr.match.name || fd.name.includes(fr.match.name)));
+      if (!hit) continue;
+      if (fr.value !== undefined && fr.value !== null) return { value: String(fr.value) };
+      if (fr.from) return { from: fr.from };
+    }
+    return null;
+  }
+  function matchRuleField(fd, rule) {
+    const e = matchRuleEntry(fd, rule);
+    return e && e.from ? e.from : null;
   }
 
   // 性别单选组特判：两个选项是 男/女
@@ -138,20 +222,53 @@
   }
 
   // ---- 基础信息填写 ----
-  async function fillBasics(ctx) {
+  // 区块外出现的列表类字段（如 Intel 主页的"最高学历/最高学历毕业时间"）：
+  // 用对应资料列表按策略排序后的第一条投放
+  async function fillBasics(ctx, strategy) {
     const fields = Scanner.scanFields();
+    // 区块内（教育/实习/证书等）的字段交给 handleSection 处理，避免 basic 字段误抢
+    const secRoots = Object.keys(D.KIND_PREFIX)
+      .map((k) => sectionRoot(k, ctx.rule))
+      .filter(Boolean);
+    const segCache = {};
+    const segOf = (prefix) => {
+      if (!(prefix in segCache)) {
+        const kind = Object.keys(D.KIND_PREFIX).find((k) => D.KIND_PREFIX[k] === prefix);
+        const list = kind ? profileListOf(ctx.profile, kind) : [];
+        segCache[prefix] = Strategy.apply(list, { order: strategy ? strategy.order : null })[0] || null;
+      }
+      return segCache[prefix];
+    };
     let filled = 0;
     const unmatched = [];
     const pend = []; // 自定义下拉等待异步处理
     for (const fd of fields) {
       if (fd.el.dataset.wsFilled) continue;
+      if (secRoots.some((r) => r.contains(fd.el))) continue;
       let v;
-      let path = matchRuleField(fd, ctx.rule);
-      if (path) v = getPath(ctx.profile, path);
-      if ((v === undefined || v === null || v === "") && isGenderGroup(fd)) v = ctx.profile.basic.gender;
-      if (v === undefined || v === null || v === "") {
-        path = lookupDict.apply(null, [fd.label, fd.name, fd.placeholder].concat(fd.altLabels || []));
-        if (path && path.startsWith("basic.")) v = getPath(ctx.profile, path);
+      let path = null;
+      const rentry = matchRuleEntry(fd, ctx.rule);
+      if (rentry && rentry.value !== undefined) {
+        v = rentry.value; // 站点规则里的固定值（如 Intel 工号填"无"）
+      } else {
+        if (rentry) path = rentry.from;
+        if (path) v = getPath(ctx.profile, path);
+        if ((v === undefined || v === null || v === "") && isGenderGroup(fd)) {
+          path = "basic.gender";
+          v = ctx.profile.basic.gender;
+        }
+        if (v === undefined || v === null || v === "") {
+          path = lookupDict(null, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
+          if (path && path.startsWith("basic.")) {
+            v = getPath(ctx.profile, path);
+          } else if (path) {
+            // 非 basic 路径且不在任何区块内：用列表第一条
+            const seg = segOf(path.split(".")[0]);
+            v = seg ? seg[path.split(".").slice(1).join(".")] : undefined;
+          } else {
+            path = null;
+          }
+        }
       }
       if (v !== undefined && v !== null && v !== "" && Filler.fillField(fd, v)) {
         filled++;
@@ -265,14 +382,25 @@
     return filled;
   }
 
-  function fillSegment(scope, seg, ctx) {
+  function fillSegment(scope, seg, ctx, kind) {
     return (async () => {
+      const pref = D.KIND_PREFIX[kind] || null;
       let filled = 0;
       const pend = [];
       for (const fd of Scanner.scanFields(scope)) {
         if (fd.el.dataset.wsFilled) continue;
-        let path = matchRuleField(fd, ctx.rule);
-        if (!path) path = lookupDict.apply(null, [fd.label, fd.name, fd.placeholder].concat(fd.altLabels || []));
+        const rentry = matchRuleEntry(fd, ctx.rule);
+        if (rentry && rentry.value !== undefined) {
+          if (Filler.fillField(fd, rentry.value)) {
+            filled++;
+            markFilled(fd.el);
+          }
+          continue;
+        }
+        let path = rentry ? rentry.from : null;
+        if (!path || !path.startsWith((pref || "") + ".")) {
+          path = lookupDict(pref, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
+        }
         if (!path || path.startsWith("basic.")) continue;
         const key = path.split(".").slice(1).join(".");
         const v = seg[key];
@@ -299,7 +427,16 @@
       education: profile.educations,
       internship: profile.internships,
       project: profile.projects,
-      award: profile.awards
+      award: profile.awards,
+      campus: profile.campuses,
+      language: profile.languages,
+      skill: profile.skills,
+      certificate: profile.certificates,
+      family: profile.family,
+      paper: profile.papers,
+      patent: profile.patents,
+      portfolio: profile.works,
+      competition: profile.competitions
     }[kind] || [];
   }
 
@@ -337,9 +474,9 @@
         scope = modal || sectionRoot(kind, ctx.rule) || document;
       }
 
-      const filled = await fillSegment(scope, seg, ctx);
+      const filled = await fillSegment(scope, seg, ctx, kind);
       log(
-        "第 " + (i + 1) + " 段「" + (seg.school || seg.company || seg.name || "") + "」填写 " + filled + " 格",
+        "第 " + (i + 1) + " 段「" + (seg.school || seg.company || seg.name || seg.title || seg.org || "") + "」填写 " + filled + " 格",
         filled ? "ok" : "warn"
       );
 
@@ -364,13 +501,22 @@
       edu: Strategy.apply(ctx.profile.educations, strategy),
       work: Strategy.apply(ctx.profile.internships, { order: strategy.order }),
       prj: Strategy.apply(ctx.profile.projects, { order: strategy.order }),
-      awd: Strategy.apply(ctx.profile.awards, { order: strategy.order })
+      awd: Strategy.apply(ctx.profile.awards, { order: strategy.order }),
+      cmp: Strategy.apply(ctx.profile.campuses || [], { order: strategy.order }),
+      lng: Strategy.apply(ctx.profile.languages || [], { order: strategy.order }),
+      skl: Strategy.apply(ctx.profile.skills || [], { order: strategy.order }),
+      crt: Strategy.apply(ctx.profile.certificates || [], { order: strategy.order }),
+      fam: Strategy.apply(ctx.profile.family || [], { order: strategy.order }),
+      pap: Strategy.apply(ctx.profile.papers || [], { order: strategy.order }),
+      pat: Strategy.apply(ctx.profile.patents || [], { order: strategy.order }),
+      wks: Strategy.apply(ctx.profile.works || [], { order: strategy.order }),
+      cpt: Strategy.apply(ctx.profile.competitions || [], { order: strategy.order })
     };
     const fields = Scanner.scanFields();
     const groups = {};
     for (const fd of fields) {
       if (fd.el.dataset.wsFilled) continue;
-      const path = lookupDict.apply(null, [fd.label, fd.name, fd.placeholder].concat(fd.altLabels || []));
+      const path = lookupDict(null, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
       if (!path || path.startsWith("basic.")) continue;
       const key = (fd.label || fd.name || path) + "|" + path;
       (groups[key] = groups[key] || []).push(fd);
@@ -380,13 +526,13 @@
       arr.sort(
         (a, b) => a.el.getBoundingClientRect().top - b.el.getBoundingClientRect().top
       );
-      const prefix = (lookupDict(arr[0].label, arr[0].name, "") || "").split(".")[0];
+      const prefix = (lookupDict(null, arr[0].label, arr[0].name, "") || "").split(".")[0];
       const segs = lists[prefix];
       if (!segs || !segs.length) continue;
       arr.forEach((fd, idx) => {
         const seg = segs[idx];
         if (!seg) return;
-        const path = lookupDict.apply(null, [fd.label, fd.name, fd.placeholder].concat(fd.altLabels || []));
+        const path = lookupDict(null, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
         const v = seg[path.split(".").slice(1).join(".")];
         if (v !== undefined && v !== "" && Filler.fillField(fd, v)) {
           filled++;
@@ -428,12 +574,16 @@
         v = getPath(ctx.profile, path);
       } else {
         const prefix = path.split(".")[0];
-        const list = {
+        const listMap = {
           edu: ctx.profile.educations,
           work: ctx.profile.internships,
           prj: ctx.profile.projects,
-          awd: ctx.profile.awards
-        }[prefix] || [];
+          awd: ctx.profile.awards,
+          cmp: ctx.profile.campuses, lng: ctx.profile.languages, skl: ctx.profile.skills,
+          crt: ctx.profile.certificates, fam: ctx.profile.family, pap: ctx.profile.papers,
+          pat: ctx.profile.patents, wks: ctx.profile.works, cpt: ctx.profile.competitions
+        };
+        const list = listMap[prefix] || [];
         const seg = list[0];
         v = seg ? seg[path.split(".").slice(1).join(".")] : undefined;
       }
@@ -456,9 +606,132 @@
     }
   }
 
+  // ---- 填写方案预览：先扫描整页，生成"字段 -> 资料项 -> 写入值"清单（与填写引擎同一套匹配逻辑，所见即所填）----
+  async function buildPlan(opts = {}) {
+    const profile = await ST.getProfile();
+    await loadCustomDict();
+    const rule = await getEffectiveRule(domain());
+    const { pageText } = Scanner.scanSectionTexts();
+    const strategy = Strategy.resolve(rule, pageText, opts.strategy || null);
+
+    const trunc = (v) => {
+      const s = String(v).replace(/\s+/g, " ");
+      return s.length > 42 ? s.slice(0, 42) + "…" : s;
+    };
+    const entryOf = (fd, path, value) => {
+      const e = {
+        label: fd.label || fd.name || fd.placeholder || "(未识别)",
+        path,
+        value: trunc(value),
+        select: null,
+        optionsOk: null
+      };
+      if (fd.tag === "select") {
+        e.select = "native";
+        const v = String(value);
+        const opts = Array.from(fd.el.options).map((o) => Scanner.clean(o.textContent));
+        e.optionsOk = opts.some((o) => o === v || o.includes(v) || v.includes(o));
+      } else if (fd.tag === "input" && Filler.isCustomDropdown(fd.el)) {
+        e.select = "custom"; // 自定义下拉：选项在点击展开后枚举比对
+      }
+      return e;
+    };
+
+    // 定位所有区块，区块内字段单独归组
+    const secRoots = {};
+    for (const kind of Object.keys(D.KIND_PREFIX)) {
+      const r = sectionRoot(kind, rule);
+      if (r) secRoots[kind] = r;
+    }
+    const inSection = (el) => Object.values(secRoots).some((r) => r.contains(el));
+
+    const basics = [];
+    const unmatched = [];
+    const segCache = {};
+    const segOf = (prefix) => {
+      if (!(prefix in segCache)) {
+        const kind = Object.keys(D.KIND_PREFIX).find((k) => D.KIND_PREFIX[k] === prefix);
+        const list = kind ? profileListOf(profile, kind) : [];
+        segCache[prefix] = Strategy.apply(list, { order: strategy.order })[0] || null;
+      }
+      return segCache[prefix];
+    };
+    for (const fd of Scanner.scanFields()) {
+      if (fd.el.dataset.wsFilled || inSection(fd.el)) continue;
+      let path = null;
+      let v;
+      const rentry = matchRuleEntry(fd, rule);
+      if (rentry && rentry.value !== undefined) {
+        path = "(固定值)";
+        v = rentry.value;
+      } else {
+        if (rentry) path = rentry.from;
+        if (path) v = getPath(profile, path);
+        if ((v === undefined || v === null || v === "") && isGenderGroup(fd)) {
+          path = "basic.gender";
+          v = profile.basic.gender;
+        }
+        if (v === undefined || v === null || v === "") {
+          path = lookupDict(null, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
+          if (path && path.startsWith("basic.")) {
+            v = getPath(profile, path);
+          } else if (path) {
+            const seg = segOf(path.split(".")[0]);
+            v = seg ? seg[path.split(".").slice(1).join(".")] : undefined;
+          } else {
+            path = null;
+          }
+        }
+      }
+      if (path && v !== undefined && v !== null && v !== "") basics.push(entryOf(fd, path, v));
+      else unmatched.push({ label: fd.label || fd.name || fd.placeholder || "(未识别)" });
+    }
+
+    const sections = [];
+    for (const [kind, root] of Object.entries(secRoots)) {
+      const segs = Strategy.apply(profileListOf(profile, kind), strategy);
+      const pref = D.KIND_PREFIX[kind];
+      const items = [];
+      for (const fd of Scanner.scanFields(root)) {
+        if (fd.el.dataset.wsFilled) continue;
+        const rentry = matchRuleEntry(fd, rule);
+        if (rentry && rentry.value !== undefined) {
+          items.push(entryOf(fd, "(固定值)", rentry.value));
+          continue;
+        }
+        let path = rentry ? rentry.from : null;
+        if (!path || !path.startsWith(pref + ".")) {
+          path = lookupDict(pref, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
+        }
+        if (!path || path.startsWith("basic.")) {
+          unmatched.push({ label: fd.label || fd.name || fd.placeholder || "(未识别)" });
+          continue;
+        }
+        const v = segs.length ? segs[0][path.split(".").slice(1).join(".")] : undefined;
+        if (v !== undefined && v !== null && v !== "") items.push(entryOf(fd, path, v));
+      }
+      sections.push({
+        kind,
+        title: (D.SECTION_HINTS[kind] || [kind])[0],
+        segs: segs.length,
+        items
+      });
+    }
+
+    return {
+      order: strategy.order,
+      includeLevels: strategy.includeLevels,
+      note: strategy.note || [],
+      basics,
+      sections,
+      unmatchedLabels: Array.from(new Set(unmatched.map((u) => u.label))).filter(Boolean).slice(0, 20)
+    };
+  }
+
   // ---- 填一页 ----
   async function fillPage(opts) {
     const profile = await ST.getProfile();
+    await loadCustomDict();
     const rule = await getEffectiveRule(domain());
     const { pageText } = Scanner.scanSectionTexts();
     const strategy = Strategy.resolve(rule, pageText, opts.strategy || null);
@@ -471,10 +744,10 @@
         (strategy.note.length ? "（" + strategy.note.join("；") + "）" : "")
     );
 
-    await fillBasics(ctx);
+    await fillBasics(ctx, strategy);
 
     let anyRoot = false;
-    for (const kind of ["education", "internship", "project", "award"]) {
+    for (const kind of Object.keys(D.KIND_PREFIX)) {
       if (stopped) break;
       if (sectionRoot(kind, rule)) {
         anyRoot = true;
@@ -574,6 +847,87 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
+  // ---- 逐字段诊断：说明每个格子"认出了什么、准备填什么、为什么没填"（页面面板 / 本地桥接 / 离线排查都用它）----
+  async function buildDiag(opts = {}) {
+    const profile = await ST.getProfile();
+    await loadCustomDict();
+    const rule = await getEffectiveRule(domain());
+    const { pageText } = Scanner.scanSectionTexts();
+    const strategy = Strategy.resolve(rule, pageText, opts.strategy || null);
+
+    const secRoots = {};
+    for (const kind of Object.keys(D.KIND_PREFIX)) {
+      const r = sectionRoot(kind, rule);
+      if (r) secRoots[kind] = r;
+    }
+    const kindOfEl = (el) => Object.keys(secRoots).find((k) => secRoots[k].contains(el)) || null;
+
+    const fields = Scanner.scanFields().map((fd) => {
+      const kind = kindOfEl(fd.el);
+      const pref = kind ? D.KIND_PREFIX[kind] : null;
+      const entry = matchRuleEntry(fd, rule);
+      let path = entry && entry.from ? entry.from : null;
+      let value;
+      let source = null;
+      if (entry && entry.value !== undefined) {
+        path = "(固定值)";
+        value = entry.value;
+        source = "站点固定值";
+      } else {
+        if (!path && isGenderGroup(fd)) {
+          path = "basic.gender";
+          value = profile.basic.gender;
+          source = "性别选项组 → 资料库";
+        }
+        if (value === undefined && (!path || (pref && !path.startsWith(pref + ".")))) {
+          path = lookupDict(pref, fd.label, fd.name, fd.placeholder, ...(fd.altLabels || []));
+        }
+        if (value === undefined && path && path.startsWith("basic.")) {
+          value = getPath(profile, path);
+          source = "词典/站点规则 → 资料库";
+        } else if (value === undefined && path) {
+          const k2 = Object.keys(D.KIND_PREFIX).find((k) => D.KIND_PREFIX[k] === path.split(".")[0]);
+          const segs = Strategy.apply(k2 ? profileListOf(profile, k2) : [], strategy);
+          const seg = segs[0] || null;
+          value = seg ? seg[path.split(".").slice(1).join(".")] : undefined;
+          source = "词典/站点规则 → 资料库(第1段)";
+        }
+      }
+      const empty = value === undefined || value === null || value === "";
+      const filled = !!fd.el.dataset.wsFilled;
+      return {
+        label: fd.label || fd.name || fd.placeholder || "",
+        alt: (fd.altLabels || []).slice(0, 3),
+        name: fd.name || "",
+        placeholder: fd.placeholder || "",
+        tag: fd.tag,
+        type: fd.type,
+        kind,
+        path: path || null,
+        value: empty ? null : String(value).slice(0, 60),
+        source,
+        filled,
+        reason: filled ? "已填" : path ? (empty ? "资料为空" : "可填") : "未识别"
+      };
+    });
+
+    return {
+      url: location.href,
+      domain: domain(),
+      title: document.title,
+      strategy: { order: strategy.order, includeLevels: strategy.includeLevels, note: strategy.note },
+      counts: {
+        total: fields.length,
+        fillable: fields.filter((f) => f.reason === "可填").length,
+        filled: fields.filter((f) => f.filled).length,
+        emptyData: fields.filter((f) => f.reason === "资料为空").length,
+        unmatched: fields.filter((f) => f.reason === "未识别").length
+      },
+      sections: Object.keys(secRoots).map((k) => ({ kind: k, hint: (D.SECTION_HINTS[k] || [k])[0] })),
+      fields
+    };
+  }
+
   // ---- 消息入口 ----
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "WS_PING") {
@@ -604,6 +958,18 @@
       sendResponse({ ok: true });
       return;
     }
+    if (msg.type === "WS_PLAN") {
+      buildPlan(msg.opts || {})
+        .then((plan) => sendResponse({ ok: true, plan }))
+        .catch((e) => sendResponse({ ok: false, error: (e && e.message) || String(e) }));
+      return true;
+    }
+    if (msg.type === "WS_DIAG") {
+      buildDiag(msg.opts || {})
+        .then((diag) => sendResponse({ ok: true, diag }))
+        .catch((e) => sendResponse({ ok: false, error: (e && e.message) || String(e) }));
+      return true;
+    }
     if (msg.type === "WS_SNAPSHOT") {
       try {
         downloadSnapshot();
@@ -615,5 +981,15 @@
     }
   });
 
-  window.WS.Ctrl = { run };
+  window.WS.Ctrl = {
+    run,
+    buildPlan,
+    buildDiag,
+    takeSnapshot,
+    subscribe,
+    isRunning: () => running,
+    stop: () => {
+      stopped = true;
+    }
+  };
 })();

@@ -1,5 +1,9 @@
 // 内置站点规则：随插件分发，用户规则优先级更高（合并时 user 覆盖 builtin）
 // 来源：site-cases/ 快照的离线 DOM 分析，可持续补充
+//
+// fieldRules 每条支持两种形态：
+//   { match: { label: "身份证" }, from: "basic.idCard" }   // 从资料库取值
+//   { match: { label: "工号" },   value: "无" }            // 固定值（页面写"未在XX工作过请填无"这类）
 (function () {
   if (window.WS && window.WS.BUILTIN) return;
   window.WS = window.WS || {};
@@ -36,7 +40,12 @@
     "chinacampus.jobs.intel.cn": {
       domain: "chinacampus.jobs.intel.cn",
       note: "英特尔中国校园招聘",
-      fieldRules: [],
+      fieldRules: [
+        // 页面原文："未在英特尔工作过请填无"
+        { match: { label: "工号" }, value: "无" },
+        { match: { label: "WWID" }, value: "无" },
+        { match: { label: "英特尔工号" }, value: "无" }
+      ],
       ui: {
         addWords: ["添加"],
         saveWords: ["确定", "保存"],
